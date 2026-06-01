@@ -36,7 +36,26 @@ ${CLAUDE_PLUGIN_ROOT}/bin/check-aws-auth.sh
 3. Run: `aws-saml.py` and select your account
 4. Export profile: `export AWS_PROFILE=saml`
 
-**⚠️ AWS SSO Limitations:**
+**⚠️ AWS SSO Credential Expiration:**
+AWS SSO credentials expire after 15-60 minutes, which is shorter than typical cluster installations (30-45 min) or teardowns (10-20 min). For long-running operations, create an IAM user with long-lived credentials instead:
+
+```bash
+# Create IAM user (one-time setup)
+aws iam create-user --user-name $(whoami)-installer
+aws iam create-access-key --user-name $(whoami)-installer
+aws iam attach-user-policy --user-name $(whoami)-installer \
+  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+
+# Add credentials to ~/.aws/credentials under [$(whoami)-installer]
+
+# Use for cluster operations
+export AWS_PROFILE=$(whoami)-installer
+setup.sh --cluster-name my-cluster --cloud aws ...
+```
+
+See [references/aws-auth.md](references/aws-auth.md) for detailed IAM user setup and when to use SSO vs IAM credentials.
+
+**⚠️ AWS SSO with Restricted IAM Roles:**
 The cluster-setup skill currently has limited support for AWS SSO credentials with restricted IAM roles. For installations with AWS SSO, you may need to:
 - Pre-create Route53 hosted zones manually
 - Create custom install-config.yaml with `credentialsMode: Manual`
